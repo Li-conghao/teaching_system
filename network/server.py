@@ -7,6 +7,7 @@ import threading
 import json
 import sys
 import os
+import logging
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -23,6 +24,20 @@ class Server:
         self.running = False
         self.clients = []
         self.db = DatabaseManager()
+        self._configure_logger()
+
+    def _configure_logger(self):
+        """初始化日志记录器"""
+        log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs', 'server.log')
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s [%(levelname)s] %(message)s',
+            handlers=[
+                logging.FileHandler(log_path, encoding='utf-8'),
+                logging.StreamHandler(sys.stdout),
+            ],
+        )
     
     def start(self):
         """启动服务器"""
@@ -41,7 +56,7 @@ class Server:
             while self.running:
                 try:
                     client_socket, address = self.server_socket.accept()
-                    print(f"新客户端连接: {address}")
+                    logging.info("新客户端连接: %s", address)
                     
                     # 为每个客户端创建一个线程
                     client_thread = threading.Thread(
@@ -55,10 +70,10 @@ class Server:
                 
                 except Exception as e:
                     if self.running:
-                        print(f"接受连接时出错: {e}")
+                        logging.exception("接受连接时出错")
         
         except Exception as e:
-            print(f"服务器启动失败: {e}")
+            logging.exception("服务器启动失败")
         
         finally:
             self.stop()
@@ -81,11 +96,11 @@ class Server:
             except:
                 pass
         
-        print("服务器已停止")
+        logging.info("服务器已停止")
     
     def handle_client(self, client_socket, address):
         """处理客户端请求"""
-        print(f"开始处理客户端 {address} 的请求")
+        logging.info("开始处理客户端 %s 的请求", address)
         
         try:
             while self.running:
@@ -93,15 +108,15 @@ class Server:
                 data = client_socket.recv(4096)
                 if not data:
                     break
-                
+
                 # 解析请求
                 try:
                     request = json.loads(data.decode('utf-8'))
-                    print(f"收到请求: {request.get('action')} from {address}")
-                    
+                    logging.info("收到请求 %s 来自 %s", request.get('action'), address)
+
                     # 处理请求
                     response = self.process_request(request)
-                    
+
                     # 发送响应
                     client_socket.send(json.dumps(response).encode('utf-8'))
                 
@@ -112,11 +127,11 @@ class Server:
                     }
                     client_socket.send(json.dumps(error_response).encode('utf-8'))
         
-        except Exception as e:
-            print(f"处理客户端 {address} 时出错: {e}")
+        except Exception:
+            logging.exception("处理客户端 %s 时出错", address)
         
         finally:
-            print(f"客户端 {address} 断开连接")
+            logging.info("客户端 %s 断开连接", address)
             try:
                 client_socket.close()
                 self.clients.remove(client_socket)
@@ -127,7 +142,7 @@ class Server:
         """处理具体的请求"""
         action = request.get('action')
         data = request.get('data', {})
-        
+
         try:
             # 用户认证
             if action == 'login':
@@ -145,6 +160,18 @@ class Server:
                         'success': False,
                         'message': '用户名或密码错误'
                     }
+
+            # 修改密码
+            elif action == 'change_password':
+                success = self.db.change_password(
+                    data.get('username'),
+                    data.get('old_password'),
+                    data.get('new_password'),
+                )
+                return {
+                    'success': success,
+                    'message': '密码修改成功' if success else '旧密码错误'
+                }
             
             # 获取学生信息
             elif action == 'get_student_info':
@@ -227,6 +254,14 @@ class Server:
                     'success': True,
                     'data': {'courses': courses}
                 }
+
+            # 获取教师的所有学生
+            elif action == 'get_teacher_students':
+                students = self.db.get_teacher_students(data.get('teacher_id'))
+                return {
+                    'success': True,
+                    'data': {'students': students}
+                }
             
             # 获取课程学生
             elif action == 'get_course_students':
@@ -273,3 +308,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("\n收到中断信号")
         server.stop()
+

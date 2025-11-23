@@ -13,15 +13,16 @@ from database.db_manager import DatabaseManager
 
 class StudentWindow:
     """学生主界面类"""
-    
-    def __init__(self, user_info, login_root):
+
+    def __init__(self, user_info, login_root, client=None):
         self.user_info = user_info
         self.login_root = login_root
-        self.db = DatabaseManager()
-        
+        self.client = client
+        self.db = None if client else DatabaseManager()
+
         # 获取学生信息
-        self.student_info = self.db.get_student_by_user_id(user_info['user_id'])
-        
+        self.student_info = self._load_student_info(user_info['user_id'])
+
         if not self.student_info:
             messagebox.showerror("错误", "无法获取学生信息！")
             self.logout()
@@ -105,6 +106,50 @@ class StudentWindow:
         # 右侧内容区域
         self.content_frame = tk.Frame(main_container, bg='white')
         self.content_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    def _load_student_info(self, user_id):
+        """从网络或本地加载学生信息"""
+        if self.client:
+            result = self.client.get_student_info(user_id)
+            if result.get('success'):
+                return result['data']['student']
+            messagebox.showerror("错误", result.get('message', '获取学生信息失败'))
+            return None
+
+        return self.db.get_student_by_user_id(user_id)
+
+    def _get_student_courses(self):
+        """获取学生选课列表"""
+        if self.client:
+            result = self.client.get_student_enrollments(self.student_info['student_id'])
+            if result.get('success'):
+                return result['data']['courses']
+            messagebox.showerror("错误", result.get('message', '获取课程失败'))
+            return []
+
+        return self.db.get_student_enrollments(self.student_info['student_id'])
+
+    def _get_all_courses(self):
+        """获取全部课程"""
+        if self.client:
+            result = self.client.get_all_courses()
+            if result.get('success'):
+                return result['data']['courses']
+            messagebox.showerror("错误", result.get('message', '获取课程失败'))
+            return []
+
+        return self.db.get_all_courses()
+
+    def _get_student_grades(self):
+        """获取学生成绩"""
+        if self.client:
+            result = self.client.get_student_grades(self.student_info['student_id'])
+            if result.get('success'):
+                return result['data']['grades']
+            messagebox.showerror("错误", result.get('message', '获取成绩失败'))
+            return []
+
+        return self.db.get_student_grades(self.student_info['student_id'])
     
     def clear_content(self):
         """清空内容区域"""
@@ -203,7 +248,7 @@ class StudentWindow:
         scrollbar.config(command=self.course_tree.yview)
         
         # 加载数据
-        enrollments = self.db.get_student_enrollments(self.student_info['student_id'])
+        enrollments = self._get_student_courses()
         for enroll in enrollments:
             self.course_tree.insert('', tk.END, values=(
                 enroll['course_id'],
@@ -298,10 +343,10 @@ class StudentWindow:
             self.enroll_tree.delete(item)
         
         # 获取所有开放的课程
-        all_courses = self.db.get_all_courses()
-        
+        all_courses = self._get_all_courses()
+
         # 获取已选课程
-        enrolled = self.db.get_student_enrollments(self.student_info['student_id'])
+        enrolled = self._get_student_courses()
         enrolled_ids = {e['course_id'] for e in enrolled}
         
         # 显示未选且开放的课程
@@ -332,7 +377,12 @@ class StudentWindow:
             return
         
         # 选课
-        success, message = self.db.enroll_course(self.student_info['student_id'], course_id)
+        if self.client:
+            result = self.client.enroll_course(self.student_info['student_id'], course_id)
+            success = result.get('success', False)
+            message = result.get('message', '')
+        else:
+            success, message = self.db.enroll_course(self.student_info['student_id'], course_id)
         
         if success:
             messagebox.showinfo("成功", message)
@@ -376,7 +426,7 @@ class StudentWindow:
         scrollbar.config(command=drop_tree.yview)
         
         # 加载已选课程
-        enrolled = self.db.get_student_enrollments(self.student_info['student_id'])
+        enrolled = self._get_student_courses()
         for enroll in enrolled:
             drop_tree.insert('', tk.END, values=(
                 enroll['course_id'],
@@ -398,7 +448,12 @@ class StudentWindow:
             if not messagebox.askyesno("确认", f"确定要退 {course_name} 吗？"):
                 return
             
-            success, message = self.db.drop_course(self.student_info['student_id'], course_id)
+            if self.client:
+                result = self.client.drop_course(self.student_info['student_id'], course_id)
+                success = result.get('success', False)
+                message = result.get('message', '')
+            else:
+                success, message = self.db.drop_course(self.student_info['student_id'], course_id)
             
             if success:
                 messagebox.showinfo("成功", message)
@@ -456,7 +511,7 @@ class StudentWindow:
         scrollbar.config(command=self.grade_tree.yview)
         
         # 加载成绩
-        grades = self.db.get_student_grades(self.student_info['student_id'])
+        grades = self._get_student_grades()
         total_score = 0
         count = 0
         
@@ -558,7 +613,13 @@ class StudentWindow:
                 messagebox.showerror("错误", "新密码长度至少6位！")
                 return
             
-            if self.db.change_password(self.user_info['user_id'], old_pwd, new_pwd):
+            if self.client:
+                result = self.client.change_password(self.user_info['username'], old_pwd, new_pwd)
+                success = result.get('success', False)
+            else:
+                success = self.db.change_password(self.user_info['username'], old_pwd, new_pwd)
+
+            if success:
                 messagebox.showinfo("成功", "密码修改成功！请重新登录。")
                 self.logout()
             else:

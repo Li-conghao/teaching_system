@@ -228,14 +228,14 @@ class LoginWindow:
         if role == 'admin':
             from gui.admin_window import AdminWindow
             admin_win = AdminWindow(self.current_user, self.root)
-            
+
         elif role == 'teacher':
             from gui.teacher_window import TeacherWindow
-            teacher_win = TeacherWindow(self.current_user, self.root)
-            
+            teacher_win = TeacherWindow(self.current_user, self.root, getattr(self, 'client', None))
+
         elif role == 'student':
             from gui.student_window import StudentWindow
-            student_win = StudentWindow(self.current_user, self.root)
+            student_win = StudentWindow(self.current_user, self.root, getattr(self, 'client', None))
     
     def run(self):
         """运行主循环"""

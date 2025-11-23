@@ -13,15 +13,16 @@ from database.db_manager import DatabaseManager
 
 class TeacherWindow:
     """教师主界面类"""
-    
-    def __init__(self, user_info, login_root):
+
+    def __init__(self, user_info, login_root, client=None):
         self.user_info = user_info
         self.login_root = login_root
-        self.db = DatabaseManager()
-        
+        self.client = client
+        self.db = None if client else DatabaseManager()
+
         # 获取教师信息
-        self.teacher_info = self.db.get_teacher_by_user_id(user_info['user_id'])
-        
+        self.teacher_info = self._load_teacher_info(user_info['user_id'])
+
         if not self.teacher_info:
             messagebox.showerror("错误", "无法获取教师信息！")
             self.logout()
@@ -105,6 +106,69 @@ class TeacherWindow:
         # 右侧内容区域
         self.content_frame = tk.Frame(main_container, bg='white')
         self.content_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    def _load_teacher_info(self, user_id):
+        """加载教师信息"""
+        if self.client:
+            result = self.client.get_teacher_info(user_id)
+            if result.get('success'):
+                return result['data']['teacher']
+            messagebox.showerror("错误", result.get('message', '获取教师信息失败'))
+            return None
+
+        return self.db.get_teacher_by_user_id(user_id)
+
+    def _get_teacher_courses(self):
+        """获取教师课程"""
+        if self.client:
+            result = self.client.get_teacher_courses(self.teacher_info['teacher_id'])
+            if result.get('success'):
+                return result['data']['courses']
+            messagebox.showerror("错误", result.get('message', '获取课程失败'))
+            return []
+
+        return self.db.get_teacher_courses(self.teacher_info['teacher_id'])
+
+    def _get_course_students(self, course_id):
+        """获取课程选课学生"""
+        if self.client:
+            result = self.client.get_course_students(course_id)
+            if result.get('success'):
+                return result['data']['students']
+            messagebox.showerror("错误", result.get('message', '获取学生列表失败'))
+            return []
+
+        return self.db.get_course_enrollments(course_id)
+
+    def _get_course_grades(self, course_id):
+        """获取课程成绩"""
+        if self.client:
+            result = self.client.get_course_grades(course_id)
+            if result.get('success'):
+                return result['data']['grades']
+            messagebox.showerror("错误", result.get('message', '获取成绩失败'))
+            return []
+
+        return self.db.get_course_grades(course_id)
+
+    def _get_teacher_students(self):
+        """获取教师全部学生"""
+        if self.client:
+            result = self.client.get_teacher_students(self.teacher_info['teacher_id'])
+            if result.get('success'):
+                return result['data']['students']
+            messagebox.showerror("错误", result.get('message', '获取学生失败'))
+            return []
+
+        return self.db.get_teacher_students(self.teacher_info['teacher_id'])
+
+    def _add_or_update_grade(self, grade_data):
+        """提交成绩"""
+        if self.client:
+            result = self.client.add_or_update_grade(grade_data)
+            return result.get('success', False)
+
+        return self.db.add_grade(grade_data)
     
     def clear_content(self):
         """清空内容区域"""
@@ -237,7 +301,7 @@ class TeacherWindow:
             self.course_tree.delete(item)
         
         # 获取课程
-        courses = self.db.get_teacher_courses(self.teacher_info['teacher_id'])
+        courses = self._get_teacher_courses()
         
         for course in courses:
             self.course_tree.insert('', tk.END, values=(
@@ -300,7 +364,7 @@ class TeacherWindow:
         scrollbar.config(command=tree.yview)
         
         # 加载学生数据
-        students = self.db.get_course_enrollments(course_id)
+        students = self._get_course_students(course_id)
         for student in students:
             tree.insert('', tk.END, values=(
                 student['student_id'],
@@ -348,7 +412,7 @@ class TeacherWindow:
         self.course_combo.pack(side=tk.LEFT, padx=10)
         
         # 加载课程列表
-        courses = self.db.get_teacher_courses(self.teacher_info['teacher_id'])
+        courses = self._get_teacher_courses()
         self.course_list = courses
         self.course_combo['values'] = [f"{c['course_id']} - {c['course_name']}" for c in courses]
         
@@ -431,11 +495,11 @@ class TeacherWindow:
             self.grade_tree.delete(item)
         
         # 获取选课学生
-        students = self.db.get_course_enrollments(course_id)
-        
+        students = self._get_course_students(course_id)
+
         # 获取成绩
         grades_dict = {}
-        grades = self.db.get_course_grades(course_id)
+        grades = self._get_course_grades(course_id)
         for grade in grades:
             grades_dict[grade['student_id']] = grade
         
@@ -538,7 +602,7 @@ class TeacherWindow:
                     'semester': course['semester']
                 }
                 
-                if self.db.add_grade(grade_data):
+                if self._add_or_update_grade(grade_data):
                     messagebox.showinfo("成功", "成绩录入成功！")
                     edit_win.destroy()
                     self.load_course_students()
@@ -591,7 +655,7 @@ class TeacherWindow:
         def search():
             keyword = search_entry.get().strip()
             # 获取选了该教师课程的学生
-            all_teacher_students = self.db.get_teacher_students(self.teacher_info['teacher_id'])
+            all_teacher_students = self._get_teacher_students()
             
             # 如果有搜索关键词，则过滤
             if keyword:
@@ -741,7 +805,13 @@ class TeacherWindow:
                 messagebox.showerror("错误", "新密码长度至少6位！")
                 return
             
-            if self.db.change_password(self.user_info['user_id'], old_pwd, new_pwd):
+            if self.client:
+                result = self.client.change_password(self.user_info['username'], old_pwd, new_pwd)
+                success = result.get('success', False)
+            else:
+                success = self.db.change_password(self.user_info['username'], old_pwd, new_pwd)
+
+            if success:
                 messagebox.showinfo("成功", "密码修改成功！请重新登录。")
                 self.logout()
             else:

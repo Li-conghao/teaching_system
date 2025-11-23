@@ -67,6 +67,14 @@ class Client:
                 'success': False,
                 'message': f'请求失败: {str(e)}'
             }
+
+    def change_password(self, username, old_password, new_password):
+        """修改密码"""
+        return self.send_request('change_password', {
+            'username': username,
+            'old_password': old_password,
+            'new_password': new_password,
+        })
     
     # ==================== 用户操作 ====================
     
@@ -90,6 +98,10 @@ class Client:
         return self.send_request('get_student_courses', {
             'student_id': student_id
         })
+
+    def get_student_enrollments(self, student_id):
+        """获取学生选课（别名）"""
+        return self.get_student_courses(student_id)
     
     def enroll_course(self, student_id, course_id):
         """选课"""
@@ -122,6 +134,12 @@ class Client:
     def get_teacher_courses(self, teacher_id):
         """获取教师课程"""
         return self.send_request('get_teacher_courses', {
+            'teacher_id': teacher_id
+        })
+
+    def get_teacher_students(self, teacher_id):
+        """获取教师所有学生"""
+        return self.send_request('get_teacher_students', {
             'teacher_id': teacher_id
         })
     
@@ -158,3 +176,4 @@ if __name__ == '__main__':
         result = client.login('admin', 'admin123')
         print(f"登录结果: {result}")
         client.disconnect()
+
