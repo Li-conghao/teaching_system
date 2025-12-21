@@ -1,0 +1,14 @@
+电信工程及管理联合培养项目是适应教育国际化趋势，依托北京邮电大学A+ 级双一流学科“信息与通信工程”和伦敦玛丽女王大学的优质教育资源而创立的宽口径、复合型交叉学科专业，为国家级和北京市级一流本科专业建设点。项目对标北邮信息与通信工程学院的传统优势专业--通信工程，面向发展新质生产力要求，坚持 立德树人根本任务，融合伦敦玛丽女王大学的先进教育理念和国际工程类人才培养标准，为我国信息通信行业培养兼具通信工程专业知识和技术管理能力，富有创新精神、实践能力和国际视野的高素质复合型卓越人才和领军人才。
+
+本专业修业年限为四年，学生在修完培养计划所规定的全部课程并考试合格后，将同时被授予北京邮电大学毕业证书和工学学士学位,以及英国伦敦玛丽女王大学工学学士学位。
+
+
+
+
+培养目标:电信工程及管理专业践行“大通信观、大网络观、大工程观”育人理念，积极落实“三全育人”、“五育并举”，培养具备良好工程素质，掌握信息与通信工程学科基础理论和专门知识，具备管理技能，拥有较强工程实践能力和团队合作精神，创造并引领未来发展的卓越人才和领军人才。
+
+未来发展:毕业生能够在国内外信息与通信、互联网及相关领域从事科学研究、工程设计、产品开发、网络运营、营销策划、企业管理等相关工作，并具有继续深造学习和持续发展的能力。
+
+核心课程:电子系统基础 (Introduction to Electronic Systems)、通信原理 (Principles of Telecommunication Systems)、电磁场与电磁波 (Electric and Magnetic fields)、信号与系统(Signals and Systems Theory)、Digital Circuit Design(数字电路设计)、Digital Signal Processing(数字信号处理)、Internet Protocols and Networks(互联网协议与网络)、Al Foundationsand Applications(Al基础及应用)、Machine Learning(机器学习)、Enterprise Management(企业管理)、Innovation and Technologyfor Engineering(工程创新与技术)等。
+
+

@@ -1,0 +1,323 @@
+==========================================
+本科教学管理系统 - 命令行参考手册
+==========================================
+
+目录
+----
+1. 初始化数据库
+2. 本地模式运行
+3. 网络模式运行
+4. 常用操作
+5. 故障排除
+
+==========================================
+1. 初始化数据库
+==========================================
+
+【首次使用必须执行】
+
+Windows系统：
+-----------
+cd C:\Users\你的用户名\Desktop\python小组作业\teaching_system
+python database\init_db.py
+
+Linux/macOS系统：
+----------------
+cd ~/Desktop/python小组作业/teaching_system
+python database/init_db.py
+
+重新初始化（清空数据）：
+----------------------
+# Windows
+del teaching_system.db
+python database\init_db.py
+
+# Linux/macOS
+rm teaching_system.db
+python database/init_db.py
+
+==========================================
+2. 本地模式运行（推荐）
+==========================================
+
+Windows系统：
+-----------
+cd C:\Users\你的用户名\Desktop\python小组作业\teaching_system
+python main.py
+
+Linux/macOS系统：
+----------------
+cd ~/Desktop/python小组作业/teaching_system
+python main.py
+
+特点：
+-----
+✓ 单机运行，无需网络
+✓ 数据存储在本地
+✓ 启动快速
+✓ 适合个人使用
+
+==========================================
+3. 网络模式运行
+==========================================
+
+【步骤1】启动服务器端
+--------------------
+
+Windows系统：
+cd C:\Users\你的用户名\Desktop\python小组作业\teaching_system
+python server_main.py
+
+Linux/macOS系统：
+cd ~/Desktop/python小组作业/teaching_system
+python server_main.py
+
+服务器配置：
+- 默认IP: 0.0.0.0 (监听所有网卡)
+- 默认端口: 8888
+- 停止服务器: Ctrl + C
+
+【步骤2】启动客户端（在另一台机器或新终端）
+-----------------------------------------
+
+Windows系统：
+cd C:\Users\你的用户名\Desktop\python小组作业\teaching_system
+python client_main.py
+
+Linux/macOS系统：
+cd ~/Desktop/python小组作业/teaching_system
+python client_main.py
+
+客户端配置：
+----------
+编辑 client_main.py 第22行：
+
+# 连接本地服务器
+client = Client(host='localhost', port=8888)
+
+# 连接远程服务器（修改为实际IP）
+client = Client(host='192.168.1.100', port=8888)
+
+测试网络连接：
+------------
+# Windows
+ping 192.168.1.100
+
+# Linux/macOS
+ping 192.168.1.100
+
+查看服务器IP地址：
+----------------
+# Windows
+ipconfig
+
+# Linux/macOS
+ifconfig
+
+==========================================
+4. 常用操作命令
+==========================================
+
+【安装依赖（可选）】
+------------------
+pip install matplotlib pandas
+
+# 或安装所有依赖
+pip install -r requirements.txt
+
+【检查Python版本】
+----------------
+python --version
+# 需要 Python 3.7 或更高版本
+
+【备份数据库】
+------------
+# Windows
+copy teaching_system.db backup\teaching_system_backup_%date:~0,4%%date:~5,2%%date:~8,2%.db
+
+# Linux/macOS
+cp teaching_system.db backup/teaching_system_backup_$(date +%Y%m%d).db
+
+【恢复数据库】
+------------
+# Windows
+copy backup\teaching_system_backup.db teaching_system.db
+
+# Linux/macOS
+cp backup/teaching_system_backup.db teaching_system.db
+
+【查看数据库大小】
+----------------
+# Windows
+dir teaching_system.db
+
+# Linux/macOS
+ls -lh teaching_system.db
+
+【清理日志文件】
+--------------
+# Windows
+del /Q logs\*.log
+
+# Linux/macOS
+rm -f logs/*.log
+
+==========================================
+5. 故障排除
+==========================================
+
+【问题1】提示"No module named 'tkinter'"
+--------------------------------------
+解决方法：
+
+Windows: 重新安装Python，勾选"tcl/tk"
+Linux: sudo apt-get install python3-tk
+macOS: 使用系统自带Python或重新安装
+
+【问题2】提示"database is locked"
+-------------------------------
+解决方法：
+
+1. 关闭所有运行的系统实例
+2. 删除 teaching_system.db-journal 文件
+3. 重新启动系统
+
+【问题3】界面显示乱码
+-------------------
+解决方法：
+
+# Windows设置UTF-8编码
+chcp 65001
+
+# 或重新初始化数据库
+del teaching_system.db
+python database\init_db.py
+
+【问题4】网络模式连接失败
+-----------------------
+检查步骤：
+
+1. 确认服务器已启动：
+   netstat -an | findstr 8888    # Windows
+   netstat -an | grep 8888       # Linux/macOS
+
+2. 测试网络连通性：
+   ping 服务器IP地址
+
+3. 检查防火墙：
+   # Windows：允许Python通过防火墙
+   # Linux：sudo ufw allow 8888
+
+4. 确认端口未被占用：
+   netstat -ano | findstr 8888   # Windows
+   lsof -i :8888                 # Linux/macOS
+
+【问题5】权限错误
+---------------
+# Windows：以管理员身份运行
+右键 -> 以管理员身份运行
+
+# Linux/macOS：修改权限
+chmod +x main.py
+chmod +x database/init_db.py
+
+【问题6】导入错误
+---------------
+检查项目结构是否完整：
+
+teaching_system/
+├── database/
+├── gui/
+├── network/
+├── main.py
+├── server_main.py
+└── client_main.py
+
+==========================================
+6. 快捷脚本（可选）
+==========================================
+
+【Windows批处理脚本】
+创建 start.bat：
+--------------
+@echo off
+cd /d %~dp0
+python main.py
+pause
+
+创建 init_db.bat：
+-----------------
+@echo off
+cd /d %~dp0
+python database\init_db.py
+pause
+
+【Linux/macOS Shell脚本】
+创建 start.sh：
+-------------
+#!/bin/bash
+cd "$(dirname "$0")"
+python main.py
+
+创建 init_db.sh：
+----------------
+#!/bin/bash
+cd "$(dirname "$0")"
+python database/init_db.py
+
+添加执行权限：
+chmod +x start.sh init_db.sh
+
+==========================================
+7. 默认账户信息
+==========================================
+
+管理员：
+-------
+用户名: admin
+密码: admin123
+
+教师（5个）：
+-----------
+用户名: teacher001, teacher002, ..., teacher005
+密码: teacher123
+
+学生（10个）：
+------------
+用户名: 2021001001, 2021001002, ...
+密码: student123
+
+==========================================
+8. 快速测试流程
+==========================================
+
+1. 初始化数据库
+   python database\init_db.py
+
+2. 启动系统（本地模式）
+   python main.py
+
+3. 管理员登录
+   用户名: admin
+   密码: admin123
+
+4. 查看数据总览
+   确认系统数据正常
+
+5. 测试教师功能
+   注销 -> 用teacher003登录
+   查看课程和学生
+
+6. 测试学生功能
+   注销 -> 用2021001001登录
+   查看课程和成绩
+
+==========================================
+结束
+==========================================
+
+更多详细信息请参考：
+- README.md
+- 用户手册.md
+
+技术支持：查看用户手册常见问题部分
